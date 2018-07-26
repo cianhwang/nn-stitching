@@ -55,23 +55,25 @@ def fun_patchConv(M_LR, patchStack):
     m2, n2, band2, dim = patchStack.shape # m2: patch size
     assert band1 == band2
     # !!-----conv: use similarity score.-----
-    # tf_patchStack = tf.constant(patchStack, tf.float32)
-    # tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
-    # scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME')
-    # with tf.Session() as sess:
-    #     scoreMap = sess.run(scoreMap)
-    M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)/2)
-    scoreMap = np.zeros([m1, n1])
-    maxIdxMap = np.zeros([m1, n1])
-    for i in range(m1):
-        for j in range(n1):
-            for k in range(dim): # optimize...
-                patch_M_LR = fun_patchCrop(M_LR, i, j, m2)
-                simScore = fun_simScore(patch, patch_M_LR)
-                if simScore > scoreMap[i, j]:
-                    maxIdxMap[i, j] = k
-                    scoreMap[i, j] = simScore
-    return maxIdxMap
+    tf_patchStack = tf.constant(patchStack, tf.float32)
+    tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
+    scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME')
+    with tf.Session() as sess:
+        scoreMap = sess.run(scoreMap)
+    return scoreMap
+
+    # M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)/2)
+    # scoreMap = np.zeros([m1, n1])
+    # maxIdxMap = np.zeros([m1, n1])
+    # for i in range(m1):
+    #     for j in range(n1):
+    #         for k in range(dim): # optimize...
+    #             patch_M_LR = fun_patchCrop(M_LR, i, j, m2)
+    #             simScore = fun_simScore(patch, patch_M_LR)
+    #             if simScore > scoreMap[i, j]:
+    #                 maxIdxMap[i, j] = k
+    #                 scoreMap[i, j] = simScore
+    # return scoreMap, maxIdxMap
 
 
 def fun_simScore(patch_LR, patch_LRef):
