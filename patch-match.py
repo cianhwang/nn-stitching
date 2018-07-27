@@ -91,7 +91,6 @@ def Fun_locateCorr(scoreMap, band):
     M_s = np.amax(scoreMap, axis = 2)
     M_s = np.repeat(M_s[:, :, np.newaxis], band, axis=2) ##? Normalization?
     maxIdxMap = np.argmax(scoreMap, axis = 2)
-    print(maxIdxMap)
     return M_s, maxIdxMap
 
 def Fun_stickPatch(maxIdxMap, M_Ref, M_s, patchSize = 3):
@@ -124,9 +123,10 @@ def Fun_patchMatching(M_LR, M_LRef, M_Ref, patchSize = 3, Stride = 1):
     return M_t, M_s
 
 
-
-
-
+M_LR = np.random.random([40, 40, 256])
+M_LRef = np.random.random([40, 40, 256])
+M_Ref = np.random.random([40, 40, 256])
+M_s, M_t = Fun_patchMatching(M_LR, M_LRef, M_Ref)
 
 
 # ''' test program '''
