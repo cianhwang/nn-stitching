@@ -1,5 +1,5 @@
 # OFFLINE BRANCH OF SRNTT
-## Module 1: Texture Extractor
+## Module 1: Texture Extractor (''test_vgg19.py'')
 
 **Description:** pre-trained VGG19 model.
 
@@ -11,7 +11,7 @@
 
 feature matrix of conv5_1 (10x10x512)
 
-## Module 2: Patch Matching & Texture Swapping
+## Module 2: Patch Matching & Texture Swapping (''patch_match.py'')
 
 **Description:** swap low-res image with high-res patches.
 
