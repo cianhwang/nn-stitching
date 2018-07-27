@@ -123,12 +123,6 @@ def Fun_patchMatching(M_LR, M_LRef, M_Ref, patchSize = 3, Stride = 1):
     return M_t, M_s
 
 
-M_LR = np.random.random([40, 40, 256])
-M_LRef = np.random.random([40, 40, 256])
-M_Ref = np.random.random([40, 40, 256])
-M_s, M_t = Fun_patchMatching(M_LR, M_LRef, M_Ref)
-
-
 # ''' test program '''
 # M_LR = np.array([0, 1, 0, 0, 0])
 # M_LR = np.tile(M_LR, (5, 1))
