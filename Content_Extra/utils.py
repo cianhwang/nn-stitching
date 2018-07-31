@@ -7,16 +7,16 @@ def img_read(path):
     return img
 
 def img_downsize(image):
-    img = misc.imresize(image, 0.5, 'bicubic')
+    img = misc.imresize(image, 50, 'bicubic')
     return img
 
 def img_upscale(image):
-    img = misc.imresize(image, 2, 'bicubic')
+    img = misc.imresize(image, 200, 'bicubic')
     return img
 
 def img_crop(image, x, y):
     m, n, band = image.shape
-    img = image[int((m-x)/2):int((m-x)/2)+x, int((n-y)/2):int((n-y)/2)+y, :]
+    img = image[:x, :y, :]
     return img
 
 def img_save(image, path):
