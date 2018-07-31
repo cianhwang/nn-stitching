@@ -1,16 +1,17 @@
 import tensorflow as tf
 from tensorflow.layers import *
+import time
 
 class SRGAN:
     def __init__(self):
         pass
 
-    def build(self, Input, train_mode=None):
-        Input = tf.constant(Input, float)
-        self.layer19 = self.Layer19(input, train_mode)
-        self.prob = self.Prob(self.layer19)
+    def build(self, input, train_mode=None):
+        start_time = time.time()
+        self.prob = self.Prob(input, train_mode)
+        print(("build model finished: %ds" % (time.time() - start_time)))
 
-    def Layer19(self, input, train_mode):
+    def Prob(self, input, train_mode):
         n = conv2d(input, 64, 3, padding='same', activation=tf.nn.relu)
         temp = n
         for i in range(16):
@@ -21,13 +22,14 @@ class SRGAN:
             nn = batch_normalization(nn, training = train_mode)
             nn = tf.add(n, nn)
             n = nn
-        n = conv2d(input, 64, 3, padding='same', activation=tf.nn.relu)
+        n = conv2d(n, 64, 3, padding='same', activation=tf.nn.relu)
         n = tf.add(n, temp)
-        return n
 
-    def Prob(self, n):
         for i in range(2):
-            n = conv2d(n, 256, 3, padding='same')
-            n = tf.depth_to_space(n,2)
-            n = tf.nn.relu(n)
+            nn = conv2d(n, 256, 3, padding='same')
+            nn = tf.depth_to_space(nn,2)
+            nn = tf.nn.relu(n)
+            n = nn
         n = conv2d(n, 3, (1, 1), padding='same', activation=tf.nn.tanh)
+
+        return n
