@@ -8,10 +8,11 @@ class SRGAN:
 
     def build(self, input, train_mode=None):
         start_time = time.time()
-        self.prob = self.Prob(input, train_mode)
+        self.layer19 = self.Layer19(input, train_mode)
+        self.prob = self.Prob(self.layer19)
         print(("build model finished: %ds" % (time.time() - start_time)))
 
-    def Prob(self, input, train_mode):
+    def Layer19(self, input, train_mode):
         n = conv2d(input, 64, 3, padding='same', activation=tf.nn.relu)
         temp = n
         for i in range(16):
@@ -24,6 +25,9 @@ class SRGAN:
             n = nn
         n = conv2d(n, 64, 3, padding='same', activation=tf.nn.relu)
         n = tf.add(n, temp)
+        return n
+
+    def Prob(self, n):
 
         for i in range(2):
             nn = conv2d(n, 256, 3, padding='same')
