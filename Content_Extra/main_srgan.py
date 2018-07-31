@@ -4,10 +4,9 @@ import tensorflow as tf
 import srgan
 
 def test_srgan(Image_lr, Image_hr):
-    assert image.shape == (160, 160, 3)
 
-    xbatch
-    ybatch
+    xbatch = Image_lr
+    ybatch = Image_hr
 
     x = tf.placeholder(float, [1, 160, 160, 3])
     y = tf.placeholder(float, [1, 160, 160, 3])
@@ -21,6 +20,9 @@ def test_srgan(Image_lr, Image_hr):
 
     with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.5)))) as sess:
         sess.run(init)
-        sess.run(train, feed_dict={x:xbatch, y:ybatch, train_mode:True})
+
+        for epoch in range(1):
+            sess.run(train, feed_dict={x:xbatch, y:ybatch, train_mode:True})
         prob = sess.run(srgan.Prob, feed_dict = {x:xbatch, train_mode:False})
+        
 
