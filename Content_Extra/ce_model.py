@@ -24,7 +24,8 @@ class SRGAN:
             nn = batch_normalization(nn, gamma_initializer =tf.random_normal_initializer(1., 0.02),training = train_mode)
             nn = tf.add(n, nn)
             n = nn
-        n = conv2d(n, 64, 3, padding='same', activation=tf.nn.relu, kernel_initializer=tf.random_normal_initializer(stddev=0.02), bias_initializer=None)
+        n = conv2d(n, 64, 3, padding='same', kernel_initializer=tf.random_normal_initializer(stddev=0.02), bias_initializer=None)
+        n = batch_normalization(n, gamma_initializer =tf.random_normal_initializer(1., 0.02),training = train_mode)
         n = tf.add(n, temp)
         return n
 
@@ -32,9 +33,7 @@ class SRGAN:
 
         for i in range(2):
             nn = conv2d(n, 256, 3, padding='same', kernel_initializer=tf.random_normal_initializer(stddev=0.02))
-            print(nn)
             nn = tf.depth_to_space(nn,2)
-            print(nn)
             nn = tf.nn.relu(nn)
             n = nn
         n = conv2d(n, 3, 1, padding='same', activation=tf.nn.tanh, kernel_initializer=tf.random_normal_initializer(stddev=0.02))

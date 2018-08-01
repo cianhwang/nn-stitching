@@ -1,10 +1,10 @@
 import numpy as np
 import tensorflow as tf
 
-import srgan
+import ce_model
 import utils
 
-def test_srgan(train_lr, train_hr, test_lr, test_hr):
+def test_ce(train_lr, train_hr, test_lr, test_hr):
 
     x_train = train_lr
     y_train = train_hr
@@ -18,7 +18,7 @@ def test_srgan(train_lr, train_hr, test_lr, test_hr):
         y = tf.placeholder(tf.float32, [None, 160, 160, 3])
         train_mode = tf.placeholder(tf.bool)
 
-        srGan = srgan.SRGAN()
+        srGan = ce_model.SRGAN()
         srGan.build(x, train_mode)
         loss = tf.losses.mean_squared_error(y, srGan.prob)
         optimizer = tf.train.AdamOptimizer()
@@ -73,7 +73,7 @@ for i in range(26):
     test_lr[k, :, :, :] = img
     k+=1
 
-prob = test_srgan(train_lr, train_hr, test_lr, test_hr)
+prob = test_ce(train_lr, train_hr, test_lr, test_hr)
 for i in range(10):
     path = '../dataset/91-image/t' + str(i+1) + '_.bmp'
     utils.img_save(prob[i,:,:,:], path)
