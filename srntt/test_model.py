@@ -58,6 +58,7 @@ x_train = train_lr
 y_train = train_hr
 Mt_train = M_t
 assert M_t.shape==(10, 40, 40, 256)
+print(np.max(M_s), np.max(M_t))
 
 
 with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.5)))) as sess:
@@ -107,6 +108,8 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
 
     prediction = sess.run(y_pred, feed_dict = {x:x_train, Mt_ph:Mt_train, train_mode:False})
 
+
+#'''--------------output------------------'''
 for i in range(10):
     path = '../dataset/91-image/t' + str(i+1) + '_.bmp'
     utils_ce.img_save(prediction[i,:,:,:], path)
