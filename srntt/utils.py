@@ -1,14 +1,36 @@
+import numpy as np 
+from scipy import misc
 import skimage
 import skimage.io
 import skimage.transform
-import numpy as np
 
+def img_read(path):
+    img = misc.imread(path, mode='RGB')
+    return img
 
-# synset = [l.strip() for l in open('synset.txt').readlines()]
+def img_resize(image, rate):
+    image = image*255.0
+    image = image.astype('uint8')
+    if len(image.shape) < 4:
+        img = misc.imresize(image, rate, 'bicubic')
+    else:
+        a, b, c, d = image.shape
+        img = np.zeros([a, b*rate//100, c*rate//100, d])
+        for i in range(a):
+            img[i, :, :, :] = misc.imresize(image[i, :, :, :], rate, 'bicubic')
+    return img/255.0
 
+def img_crop(image, x, y):
+    m, n, band = image.shape
+    img = image[:x, :y, :]
+    return img
 
-# returns image of shape [224, 224, 3]
-# [height, width, depth]
+def img_save(image, path):
+    image = np.array(image)
+    img = image*255.0
+    img = img.astype('uint8')
+    misc.imsave(path, img)
+
 def load_image(path):
     # load image
     img = skimage.io.imread(path)

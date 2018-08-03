@@ -79,27 +79,15 @@ def Fun_patchConv(M_LR, patchStack):
             patchStack[:, :, :, k] = patchStack[:, :, :, k]/(np.spacing(1)+np.linalg.norm(patchStack[:, :, :, k].reshape([1, -1])))
             k += 1
 
+    with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.5)))) as sess:
     # -----conv: use similarity score.-----
-    tf_patchStack = tf.constant(patchStack, tf.float32)
-    tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
-    scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME') # 1.Inner product? 2.Flip?
-    
-
-    with tf.Session() as sess:
+        tf_patchStack = tf.constant(patchStack, tf.float32)
+        tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
+        scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME') # 1.Inner product? 2.Flip?
         scoreMap = sess.run(scoreMap)
+        
     scoreMap = scoreMap[0, :, :, :]/(np.spacing(1)+np.repeat(normMap[:, :, np.newaxis], dim, axis=2))
     return scoreMap
-
-    # M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)//2)
-    # scoreMap = np.zeros([m1, n1, dim])
-    # for i in range(m1):
-    #     for j in range(n1):
-    #         for k in range(dim):
-    #             patch_M_LR = fun_patchCrop(M_LR_zeroPadding, i, j, m2)
-    #             patch = patchStack[:, :, :, k]
-    #             simScore = fun_simScore(patch, patch_M_LR)
-    #             scoreMap[i, j, k] = simScore
-    # return scoreMap
 
 def Fun_locateCorr(scoreMap, band):
     assert len(scoreMap.shape) == 3
@@ -135,21 +123,3 @@ def Fun_patchMatching(M_LR, M_LRef, M_Ref, patchSize = 3, Stride = 1):
     M_s, maxIdxMap = Fun_locateCorr(scoreMap, M_LR.shape[2])
     M_t = Fun_stickPatch(maxIdxMap, M_Ref, M_s, patchSize)
     return M_t, M_s
-
-
-# ''' test program '''
-# M_LR = np.array([0, 1, 0, 0, 0])
-# M_LR = np.tile(M_LR, (5, 1))
-# M_LR = M_LR[:, :, np.newaxis]
-# M_LRef = np.zeros([5, 5, 1])
-# smPatch = np.zeros([3, 3])
-# smPatch[:, 0] = -1
-# smPatch[:, 2] = 1
-# M_LRef[0:3, 0:3, 0] = smPatch
-
-# M_Ref = M_LRef
-
-# M_s, M_t = Fun_patchMatching(M_LR, M_LRef, M_Ref)
-# print(M_s)
-# print(M_t)
-

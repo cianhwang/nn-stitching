@@ -3,6 +3,7 @@ from tensorflow.layers import *
 import time
 
 def CTT(Mc_placeholder, Mt_placeholder, train_mode):
+    print("CTT: build model started")
     start_time = time.time()
     input = tf.concat([Mc_placeholder, Mt_placeholder], 3)
     n = conv2d(input, 64, 3, padding='same', activation=tf.nn.relu, kernel_initializer=tf.random_normal_initializer(stddev=0.02))
@@ -24,6 +25,6 @@ def CTT(Mc_placeholder, Mt_placeholder, train_mode):
         n = tf.nn.relu(n)
     n = conv2d(n, 3, 1, padding='same', activation=tf.nn.tanh, kernel_initializer=tf.random_normal_initializer(stddev=0.02))
 
-    print(("build model finished: %ds" % (time.time() - start_time)))
+    print(("CTT: build model finished: %ds" % (time.time() - start_time)))
 
     return n
