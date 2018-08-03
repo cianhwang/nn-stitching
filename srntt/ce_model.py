@@ -12,7 +12,6 @@ class SRGAN:
         print(("build model finished: %ds" % (time.time() - start_time)))
 
     def Layer19(self, input, train_mode):
-        g_init = tf.random_normal_initializer(1., 0.02)
         n = conv2d(input, 64, 3, padding='same', activation=tf.nn.relu, kernel_initializer=tf.random_normal_initializer(stddev=0.02))
         temp = n
         for i in range(16):

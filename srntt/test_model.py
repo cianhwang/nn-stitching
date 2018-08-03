@@ -10,28 +10,30 @@ import vgg19
 
 # def Gram(a):
 #     # a batch x height x width x features -> batch * features * features
-#     a = tf.reshape(a, [10, -1, 256])
+#     a = tf.reshape(a, [imgNo, -1, 256])
 #     trans_a = tf.transpose(a, [0, 2, 1])
 #     return tf.matmul(trans_a, a)
 
 def Gram(feature_maps):
   """Computes the Gram matrix for a set of feature maps."""
   batch_size, height, width, channels = tf.unstack(tf.shape(feature_maps))
-  denominator = tf.to_float(height * width)
+  #denominator = tf.to_float(height * width)
   feature_maps = tf.reshape(
       feature_maps, tf.stack([batch_size, height * width, channels]))
   matrix = tf.matmul(feature_maps, feature_maps, adjoint_a=True)
-  return matrix# / denominator
+  return matrix #/ denominator
 
 # def Load_data():
 #     pass
 
 # Img_LR, Img_Ref, Img_HR = Load_data()
-train_hr = np.zeros([10, 160, 160, 3])
-train_lr = np.zeros([10, 40, 40, 3])
-train_ref = np.zeros([10, 160, 160, 3])
+imgNo = 10
+batchSize=5
+train_hr = np.zeros([imgNo, 160, 160, 3])
+train_lr = np.zeros([imgNo, 40, 40, 3])
+train_ref = np.zeros([imgNo, 160, 160, 3])
 
-for i in range(10):
+for i in range(imgNo):
     path = '../dataset/91-image/t' + str(i+1) + '.bmp'
     img = utils_ce.img_read(path)
     img = utils_ce.img_crop(img, 160, 160)
@@ -42,11 +44,14 @@ for i in range(10):
     img = utils_ce.img_downsize(img, 25)
     train_lr[i, :, :, :] = img
 #np.random.shuffle(train_ref)
+#print('--------------------train_hr max: ', np.max(train_hr), np.max(train_ref), np.max(train_lr))
 
 M_LR = test_vgg19.vgg19_pretrained(utils_ce.img_upscale(train_lr, 400)/255.)[0]
 M_LRef = utils_ce.img_downsize(train_ref, 25)
 M_LRef = test_vgg19.vgg19_pretrained(utils_ce.img_upscale(M_LRef, 400)/255.)[0]
 M_Ref = test_vgg19.vgg19_pretrained(train_ref/255.)[0]
+
+#print('--------------------M_LR max: ', np.max(M_LR), np.max(M_LRef), np.max(M_Ref))
 
 
 M_t = np.zeros(M_LR.shape)
@@ -54,11 +59,11 @@ M_s = np.zeros(M_LR.shape)
 for i in range(M_LR.shape[0]):
     M_t[i,:,:,:], M_s[i,:,:,:] = patch_match.Fun_patchMatching(M_LR[i,:,:,:], M_LRef[i,:,:,:], M_Ref[i,:,:,:])
 
-x_train = train_lr
-y_train = train_hr
-Mt_train = M_t
-assert M_t.shape==(10, 40, 40, 256)
-print(np.max(M_s))
+x_train = train_lr/255.
+y_train = train_hr/255.
+assert M_t.shape==(imgNo, 40, 40, 256)
+
+#print('-------------------M_t max: ', np.max(M_t), np.max(M_s))
 
 
 with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.5)))) as sess:
@@ -73,17 +78,20 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
 
     srGan = ce_model.SRGAN()
     srGan.build(x, train_mode)
+
     y_pred = ctt_model.CTT(srGan.layer19, Mt_ph, train_mode)
+
     vgg = vgg19.Vgg19()
     vgg.build(y)
     vgg_y = vgg.conv5_1
+
     vgg2 = vgg19.Vgg19()
     vgg2.build(y_pred)
     vgg_ypred = vgg2.conv5_1
     vgg_ypred2 = vgg2.conv3_1
 
-    loss = tf.norm(tf.reshape(y-y_pred, [-1]), ord=1)/1600.
-    loss_total = tf.norm(tf.reshape(y-y_pred, [-1]), ord=1)/1600. + 1e-4 * tf.norm(vgg_y-vgg_ypred)/512./100. + 1e-4 * tf.norm(Gram(vgg_ypred2*Ms_ph)-Gram(Mt_ph))/(1600.*2.*256)**2
+    loss = tf.norm(y-y_pred, ord=1)/(160.*160.)
+    loss_total = tf.norm(y-y_pred, ord=1)/(160.*160.) + 1e-4 * tf.norm(vgg_y-vgg_ypred, ord=2)/512./100. + 1e-4 * tf.norm(Gram(vgg_ypred2*Ms_ph)-Gram(Mt_ph), ord=2)/(1600.*2.*256.)**2
     optimizer = tf.train.AdamOptimizer(1e-4)    
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
@@ -93,24 +101,24 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     init = tf.global_variables_initializer()
     sess.run(init)
 
-    for epoch in range(1):
-        ran=np.sort(np.random.choice(x_train.shape[0],5,replace=False))
+    for epoch in range(1000):
+        ran=np.sort(np.random.choice(x_train.shape[0],batchSize,replace=False))
         xbatch = x_train[ran,:,:,:]
         ybatch = y_train[ran,:,:,:]
-        MtBatch = Mt_train[ran,:,:,:]
+        MtBatch = M_t[ran,:,:,:]
         MsBatch = M_s[ran,:,:,:]
-        if epoch < 5:
-            sess.run(train_op, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:True})
-        else:
+        if epoch > 5:
             sess.run(train_op2, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:True})
-        if epoch % 20==0:
-            print(sess.run(loss_total, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:False}))
+        else:
+            sess.run(train_op, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:True})
+        if epoch % 50==0:
+            print(sess.run(loss, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:False}))
+            layer19 = sess.run(srGan.layer19, feed_dict = {x:xbatch, train_mode:False})
 
-    prediction = sess.run(y_pred, feed_dict = {x:x_train, Mt_ph:Mt_train, train_mode:False})
+            prediction = sess.run(y_pred, feed_dict = {x:x_train, Mt_ph:M_t, train_mode:False})
+            print(np.max(prediction))
 
-
-#'''--------------output------------------'''
-for i in range(10):
-    path = '../dataset/91-image/t' + str(i+1) + '_.bmp'
-    utils_ce.img_save(prediction[i,:,:,:], path)
+            for i in range(imgNo):
+                path = '../dataset/91-image/t' + str(i+1) + '_.bmp'
+                utils_ce.img_save(prediction[i,:,:,:], path)
 
