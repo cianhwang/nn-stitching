@@ -76,7 +76,7 @@ def Fun_patchConv(M_LR, patchStack):
     # scoreMap = scoreMap[0, :, :, :]
     # return scoreMap
 
-    M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)/2)
+    M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)//2)
     scoreMap = np.zeros([m1, n1, dim])
     for i in range(m1):
         for j in range(n1):
