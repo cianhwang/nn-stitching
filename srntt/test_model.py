@@ -43,10 +43,10 @@ for i in range(10):
     train_lr[i, :, :, :] = img
 #np.random.shuffle(train_ref)
 
-M_LR = test_vgg19.vgg19_pretrained(utils_ce.img_upscale(train_lr, 400))[0]
+M_LR = test_vgg19.vgg19_pretrained(utils_ce.img_upscale(train_lr, 400)/255.)[0]
 M_LRef = utils_ce.img_downsize(train_ref, 25)
-M_LRef = test_vgg19.vgg19_pretrained(utils_ce.img_upscale(M_LRef, 400))[0]
-M_Ref = test_vgg19.vgg19_pretrained(train_ref)[0]
+M_LRef = test_vgg19.vgg19_pretrained(utils_ce.img_upscale(M_LRef, 400)/255.)[0]
+M_Ref = test_vgg19.vgg19_pretrained(train_ref/255.)[0]
 
 
 M_t = np.zeros(M_LR.shape)
@@ -58,7 +58,7 @@ x_train = train_lr
 y_train = train_hr
 Mt_train = M_t
 assert M_t.shape==(10, 40, 40, 256)
-print(np.max(M_s), np.max(M_t))
+print(np.max(M_s))
 
 
 with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.5)))) as sess:
@@ -93,7 +93,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     init = tf.global_variables_initializer()
     sess.run(init)
 
-    for epoch in range(100):
+    for epoch in range(1):
         ran=np.sort(np.random.choice(x_train.shape[0],5,replace=False))
         xbatch = x_train[ran,:,:,:]
         ybatch = y_train[ran,:,:,:]

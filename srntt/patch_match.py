@@ -38,6 +38,13 @@ def fun_patchCrop(M, leftupperX, leftupperY, patchSize): #
     patch = M[leftupperX:(leftupperX+patchSize), leftupperY:(leftupperY+patchSize), :]
     return patch
 
+def fun_simScore(patch_LR, patch_LRef):
+    vec_LR = patch_LR.reshape([-1, 1])
+    vec_LRef = patch_LRef.reshape([-1, 1])
+    score = np.dot(vec_LR.T, vec_LRef)/(np.linalg.norm(vec_LR)*np.linalg.norm(vec_LRef)+ np.spacing(1))
+    return score
+
+
 def Fun_patchSample(M, patchSize = 3, Stride = 1):
     m, n, band = M.shape
     assert m == n
@@ -59,32 +66,26 @@ def Fun_patchConv(M_LR, patchStack):
     m2, n2, band2, dim = patchStack.shape # m2: patch size
     assert band1 == band2
     # -----conv: use similarity score.-----
-    tf_patchStack = tf.constant(patchStack, tf.float32)
-    tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
-    scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME') # 1.Inner product? 2.Flip?
+    # tf_patchStack = tf.constant(patchStack, tf.float32)
+    # tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
+    # scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME') # 1.Inner product? 2.Flip?
+    
 
-    with tf.Session() as sess:
-        scoreMap = sess.run(scoreMap)
-    scoreMap = scoreMap[0, :, :, :]
+    # with tf.Session() as sess:
+    #     scoreMap = sess.run(scoreMap)
+    # scoreMap = scoreMap[0, :, :, :]
+    # return scoreMap
+
+    M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)/2)
+    scoreMap = np.zeros([m1, n1, dim])
+    for i in range(m1):
+        for j in range(n1):
+            for k in range(dim):
+                patch_M_LR = fun_patchCrop(M_LR_zeroPadding, i, j, m2)
+                patch = patchStack[:, :, :, k]
+                simScore = fun_simScore(patch, patch_M_LR)
+                scoreMap[i, j, k] = simScore
     return scoreMap
-#
-    # M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)/2)
-    # scoreMap = np.zeros([m1, n1])
-    # maxIdxMap = np.zeros([m1, n1])
-    # for i in range(m1):
-    #     for j in range(n1):
-    #         for k in range(dim): # optimize...
-    #             patch_M_LR = fun_patchCrop(M_LR, i, j, m2)
-    #             simScore = fun_simScore(patch, patch_M_LR)
-    #             if simScore > scoreMap[i, j]:
-    #                 maxIdxMap[i, j] = k
-    #                 scoreMap[i, j] = simScore
-    # return scoreMap, maxIdxMap
-
-# def fun_simScore(patch_LR, patch_LRef):
-    # vec_LR = patch_LR.reshape([-1, 1])
-    # vec_LRef = patch_LRef.reshape([-1, 1])
-    # score = np.dot(vec_LR.T, vec_LRef)/(np.linalg.norm(vec_LR)*np.linalg.norm(vec_LRef))
 
 def Fun_locateCorr(scoreMap, band):
     assert len(scoreMap.shape) == 3
@@ -116,7 +117,6 @@ def Fun_stickPatch(maxIdxMap, M_Ref, M_s, patchSize = 3):
 
 def Fun_patchMatching(M_LR, M_LRef, M_Ref, patchSize = 3, Stride = 1):
     M_LRef_patchStack = Fun_patchSample(M_LRef, patchSize, Stride)
-    M_Ref_patchStack = Fun_patchSample(M_Ref, patchSize, Stride)
     scoreMap = Fun_patchConv(M_LR, M_LRef_patchStack)
     M_s, maxIdxMap = Fun_locateCorr(scoreMap, M_LR.shape[2])
     M_t = Fun_stickPatch(maxIdxMap, M_Ref, M_s, patchSize)

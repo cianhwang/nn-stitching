@@ -3,7 +3,7 @@ from scipy import misc
 
 
 def img_read(path):
-    img = misc.imread(path, mode='RGB')/255.0  
+    img = misc.imread(path, mode='RGB')
     return img
 
 def img_downsize(image, rate):
