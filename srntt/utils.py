@@ -6,6 +6,7 @@ import skimage.transform
 
 def img_read(path):
     img = misc.imread(path, mode='RGB')
+    img = img/255.0
     return img
 
 def img_resize(image, rate):
@@ -26,7 +27,6 @@ def img_crop(image, x, y):
     return img
 
 def img_save(image, path):
-    image = np.array(image)
     img = image*255.0
     img = img.astype('uint8')
     misc.imsave(path, img)
