@@ -87,7 +87,7 @@ def Fun_patchConv(M_LR, patchStack):
 
     with tf.Session() as sess:
         scoreMap = sess.run(scoreMap)
-    scoreMap = scoreMap[0, :, :, :]/(np.spacing(1)+np.repeat(normMap[:, :, np.newaxis], band1, axis=2))
+    scoreMap = scoreMap[0, :, :, :]/(np.spacing(1)+np.repeat(normMap[:, :, np.newaxis], dim, axis=2))
     return scoreMap
 
     # M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)//2)
