@@ -86,28 +86,8 @@ class Vgg19:
             relu = tf.nn.relu(bias)
             return relu
 
-    def fc_layer(self, bottom, name):
-        with tf.variable_scope(name):
-            shape = bottom.get_shape().as_list()
-            dim = 1
-            for d in shape[1:]:
-                dim *= d
-            x = tf.reshape(bottom, [-1, dim])
-
-            weights = self.get_fc_weight(name)
-            biases = self.get_bias(name)
-
-            # Fully connected layer. Note that the '+' operation automatically
-            # broadcasts the biases.
-            fc = tf.nn.bias_add(tf.matmul(x, weights), biases)
-
-            return fc
-
     def get_conv_filter(self, name):
         return tf.constant(self.data_dict[name][0], name="filter")
 
     def get_bias(self, name):
         return tf.constant(self.data_dict[name][1], name="biases")
-
-    def get_fc_weight(self, name):
-        return tf.constant(self.data_dict[name][0], name="weights")
