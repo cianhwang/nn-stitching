@@ -57,7 +57,7 @@ def Fun_patchSample(M, patchSize = 3, Stride = 1):
     for i in range(0, m, Stride):
         for j in range(0, n, Stride):
             singlePatch = fun_patchCrop(M_padding, i, j, patchSize)
-            patchStack[:,:,:,k] = singlePatch/(np.spacing(1)+np.linalg.norm(singlePatch.reshape([1, -1]))) # Normalization
+            patchStack[:,:,:,k] = singlePatch#/(np.spacing(1)+np.linalg.norm(singlePatch.reshape([1, -1]))) # Normalization
             k += 1
     return patchStack
 
@@ -65,27 +65,41 @@ def Fun_patchConv(M_LR, patchStack):
     m1, n1, band1 = M_LR.shape
     m2, n2, band2, dim = patchStack.shape # m2: patch size
     assert band1 == band2
+
+    M_LR_patchStack = Fun_patchSample(M_LR)
+    normMap = np.zeros([m1, n1])
+    k = 0
+    for i in range(m1): # Norm map
+        for j in range(n1):
+            normMap[i, j] = np.linalg.norm(M_LR_patchStack[:, :, :, k].reshape([1, -1]))
+            k += 1
+    k = 0
+    for i in range(m1): # Norm map
+        for j in range(n1):
+            patchStack[:, :, :, k] = patchStack[:, :, :, k]/(np.spacing(1)+np.linalg.norm(patchStack[:, :, :, k].reshape([1, -1])))
+            k += 1
+
     # -----conv: use similarity score.-----
-    # tf_patchStack = tf.constant(patchStack, tf.float32)
-    # tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
-    # scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME') # 1.Inner product? 2.Flip?
+    tf_patchStack = tf.constant(patchStack, tf.float32)
+    tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
+    scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME') # 1.Inner product? 2.Flip?
     
 
-    # with tf.Session() as sess:
-    #     scoreMap = sess.run(scoreMap)
-    # scoreMap = scoreMap[0, :, :, :]
-    # return scoreMap
-
-    M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)//2)
-    scoreMap = np.zeros([m1, n1, dim])
-    for i in range(m1):
-        for j in range(n1):
-            for k in range(dim):
-                patch_M_LR = fun_patchCrop(M_LR_zeroPadding, i, j, m2)
-                patch = patchStack[:, :, :, k]
-                simScore = fun_simScore(patch, patch_M_LR)
-                scoreMap[i, j, k] = simScore
+    with tf.Session() as sess:
+        scoreMap = sess.run(scoreMap)
+    scoreMap = scoreMap[0, :, :, :]/(np.spacing(1)+np.repeat(normMap[:, :, np.newaxis], band1, axis=2))
     return scoreMap
+
+    # M_LR_zeroPadding = fun_zeroPadding(M_LR, (m2-1)//2)
+    # scoreMap = np.zeros([m1, n1, dim])
+    # for i in range(m1):
+    #     for j in range(n1):
+    #         for k in range(dim):
+    #             patch_M_LR = fun_patchCrop(M_LR_zeroPadding, i, j, m2)
+    #             patch = patchStack[:, :, :, k]
+    #             simScore = fun_simScore(patch, patch_M_LR)
+    #             scoreMap[i, j, k] = simScore
+    # return scoreMap
 
 def Fun_locateCorr(scoreMap, band):
     assert len(scoreMap.shape) == 3
