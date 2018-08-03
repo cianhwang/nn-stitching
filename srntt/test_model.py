@@ -92,7 +92,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     sess.run(init)
 
 
-    for epoch in range(5000):
+    for epoch in range(10000):
         ran=np.sort(np.random.choice(train_hr.shape[0],batchSize,replace=False))
         M_LR = Vgg_module.vgg19_module(utils.img_resize(train_lr[ran,:,:,:], 400))
         M_LRef = Vgg_module.vgg19_module(utils.img_resize(train_lref[ran,:,:,:], 400))
@@ -119,12 +119,12 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
 
             # Calculate or Save the prediction
             for i in range(batchSize):
-                path = './result/pred/' + 'epoch' +str(epoch) +'_'+ str(i+1) + '.bmp'
+                path = './result/pred/' + str(i+1) + '.bmp'
                 utils.img_save(prediction[i,:,:,:], path)
-                path = './result/ref/' + 'epoch' +str(epoch) +'_'+ str(i+1) + '.bmp'
+                path = './result/ref/' + str(i+1) + '.bmp'
                 utils.img_save(train_ref[i,:,:,:], path)
-                path = './result/lr/' + 'epoch' +str(epoch) +'_'+ str(i+1) + '.bmp'
+                path = './result/lr/' + str(i+1) + '.bmp'
                 utils.img_save(train_lr[i,:,:,:], path)
-                path = './result/hr/' + 'epoch' +str(epoch) +'_'+ str(i+1) + '.bmp'
+                path = './result/hr/' + str(i+1) + '.bmp'
                 utils.img_save(train_hr[i,:,:,:], path)
 
