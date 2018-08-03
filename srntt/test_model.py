@@ -18,6 +18,12 @@ def Gram(feature_maps):
   matrix = tf.matmul(feature_maps, feature_maps, adjoint_a=True)
   return matrix #/denominator
 
+dataNum= 1000
+batchSize = 16
+train_ref, train_hr = dataload.dataLoader("./SRNTT1000.h5", dataNum)
+train_lr = utils.img_resize(train_hr, 25)
+train_lref = utils.img_resize(train_ref, 25)
+
 with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.8)))) as sess:
 
     # imgNo = 30
@@ -85,14 +91,12 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     init = tf.global_variables_initializer()
     sess.run(init)
 
-    batchSize = 16
-    for epoch in range(2000):
-        train_ref, train_hr = dataload.dataLoader("./SRNTT1000.h5", batchSize)
-        train_lr = utils.img_resize(train_hr, 25)
-        train_lref = utils.img_resize(train_ref, 25)
-        M_LR = Vgg_module.vgg19_module(utils.img_resize(train_lr, 400))
-        M_LRef = Vgg_module.vgg19_module(utils.img_resize(train_lref, 400))
-        M_Ref = Vgg_module.vgg19_module(train_ref)
+
+    for epoch in range(5000):
+        ran=np.sort(np.random.choice(train_hr.shape[0],batchSize,replace=False))
+        M_LR = Vgg_module.vgg19_module(utils.img_resize(train_lr[ran,:,:,:], 400))
+        M_LRef = Vgg_module.vgg19_module(utils.img_resize(train_lref[ran,:,:,:], 400))
+        M_Ref = Vgg_module.vgg19_module(train_ref[ran,:,:,:])
         M_t = np.zeros(M_LR.shape)
         M_s = np.zeros(M_LR.shape)
         for i in range(M_LR.shape[0]):
