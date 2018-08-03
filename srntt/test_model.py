@@ -18,24 +18,41 @@ def Gram(feature_maps):
   matrix = tf.matmul(feature_maps, feature_maps, adjoint_a=True)
   return matrix #/denominator
 
-imgNo = 10
-batchSize=5
-path = "..."
-train_ref, train_hr = dataload.dataLoader(path)
-train_lr = utils.img_resize(train_hr, 25)
-train_lref = utils.img_resize(train_ref, 25)
-
-M_LR = Vgg_module.vgg19_module(utils.img_resize(train_lr, 400))
-M_LRef = Vgg_module.vgg19_module(utils.img_resize(train_lref, 400))
-M_Ref = Vgg_module.vgg19_module(train_ref)
-
-M_t = np.zeros(M_LR.shape)
-M_s = np.zeros(M_LR.shape)
-for i in range(M_LR.shape[0]):
-    M_t[i,:,:,:], M_s[i,:,:,:] = patch_match.Fun_patchMatching(M_LR[i,:,:,:], M_LRef[i,:,:,:], M_Ref[i,:,:,:])
-
 with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.5)))) as sess:
- 
+
+    imgNo = 65
+    batchSize = 16
+    # path = "..."
+    # train_ref, train_hr = dataload.dataLoader(path)
+    # train_lr = utils.img_resize(train_hr, 25)
+    # train_lref = utils.img_resize(train_ref, 25)
+
+    train_hr = np.zeros([imgNo, 160, 160, 3])
+    train_lr = np.zeros([imgNo, 40, 40, 3])
+    train_ref = np.zeros([imgNo, 160, 160, 3])
+    train_lref = np.zeros([imgNo, 160, 160, 3])
+
+    for i in range(imgNo):
+        path = '../dataset/91-image/t' + str(i+1) + '.bmp'
+        img = utils.img_read(path)
+        img = utils.img_crop(img, 160, 160)
+        if img.shape != (160, 160, 3):
+            continue
+        train_hr[i, :, :, :] = img
+        train_ref[i, :, :, :] = img
+        img = utils.img_resize(img, 25)
+        train_lr[i, :, :, :] = img
+        train_lref[i, :, :, :] = img
+
+    M_LR = Vgg_module.vgg19_module(utils.img_resize(train_lr, 400))
+    M_LRef = Vgg_module.vgg19_module(utils.img_resize(train_lref, 400))
+    M_Ref = Vgg_module.vgg19_module(train_ref)
+
+    M_t = np.zeros(M_LR.shape)
+    M_s = np.zeros(M_LR.shape)
+    for i in range(M_LR.shape[0]):
+        M_t[i,:,:,:], M_s[i,:,:,:] = patch_match.Fun_patchMatching(M_LR[i,:,:,:], M_LRef[i,:,:,:], M_Ref[i,:,:,:])
+
     x = tf.placeholder(tf.float32, [None, 40, 40, 3])
     y = tf.placeholder(tf.float32, [None, 160, 160, 3])
     Mt_ph= tf.placeholder(tf.float32, [None, 40, 40, 256])
@@ -84,5 +101,9 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
             learning_rate /= 10
             print(sess.run(loss_total, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:False}))
             prediction = sess.run(y_pred, feed_dict = {x:train_lr, Mt_ph:M_t, train_mode:False})
+
             # Calculate or Save the prediction
+            for i in range(10):
+                path = '../dataset/91-image/t' + str(i+1) + '_.bmp'
+                utils.img_save(prediction[i,:,:,:], path)
 
