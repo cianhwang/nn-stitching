@@ -8,4 +8,4 @@ def dataLoader(data_file, batchSize):
         ref=ref.transpose(0,3,2,1)
         label=np.transpose(label,(0,3,2,1))
         ran=np.sort(np.random.choice(label.shape[0],batchSize,replace=False))
-        return ref[ran,:,:,:],label[ran,:,:,:]
+        return ref[ran,:,:,:]/255.0,label[ran,:,:,:]/255.0

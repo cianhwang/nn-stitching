@@ -18,7 +18,7 @@ def Gram(feature_maps):
   matrix = tf.matmul(feature_maps, feature_maps, adjoint_a=True)
   return matrix #/denominator
 
-with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.5)))) as sess:
+with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.8)))) as sess:
 
     # imgNo = 30
     # batchSize = 15
