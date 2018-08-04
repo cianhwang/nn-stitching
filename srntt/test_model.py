@@ -26,6 +26,14 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     train_lref = utils.img_resize(train_ref, 25)
     test_lr = utils.img_resize(test_hr, 25)
     test_lred = utils.img_resize(test_ref, 25)
+
+    for i in range(train_ref.shape[0]):
+        path = './result/ref/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
+        utils.img_save(train_ref[i,:,:,:], path)
+        path = './result/lr/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
+        utils.img_save(train_lr[i,:,:,:], path)
+        path = './result/hr/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
+        utils.img_save(train_hr[i,:,:,:], path)
     
 
     '''----------------------Net Construct-------------------------'''
@@ -60,7 +68,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
 
     init = tf.global_variables_initializer()
     sess.run(init)
-
+    learning_rate = 1e-4
     '''-------------------------train--------------------------'''
     for epoch in range(10000):
         ran=np.sort(np.random.choice(train_hr.shape[0],batchSize,replace=False))
@@ -68,11 +76,11 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
         ybatch = train_hr[ran,:,:,:]
         MtBatch = M_t[ran,:,:,:]
         MsBatch = M_s[ran,:,:,:]
-        learning_rate = 1e-4
-        if epoch >= 5:
-            sess.run(train_op, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch,train_mode:True, Learning_rate: learning_rate})
-        else:
+        if epoch < 5:
             sess.run(train_op_pre, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch,train_mode:True, Learning_rate: learning_rate})
+        else:
+            sess.run(train_op, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch,train_mode:True, Learning_rate: learning_rate})
+
         if epoch % 50==0:
             # update learning rate
             learning_rate /= 10
@@ -81,14 +89,10 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
             prediction = sess.run(y_pred, feed_dict = {x:test_lr, Mt_ph:test_Mt, train_mode:False})
             eval_psnr = tf.image.psnr(prediction, test_hr, max_val=1.0)
             eval_ssim = tf.image.ssim(prediction, test_hr, max_val=1.0)
+            np.save("epoch"+str(epoch)+"_psnr.npy", eval_psnr)
+            np.save("epoch"+str(epoch)+"_ssim.npy", eval_ssim)
             # Calculate or Save the prediction
             for i in range(prediction.shape[0]):
                 path = './result/pred/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
                 utils.img_save(prediction[i,:,:,:], path)
-                path = './result/ref/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
-                utils.img_save(train_ref[i,:,:,:], path)
-                path = './result/lr/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
-                utils.img_save(train_lr[i,:,:,:], path)
-                path = './result/hr/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
-                utils.img_save(train_hr[i,:,:,:], path)
 
