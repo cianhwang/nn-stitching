@@ -11,14 +11,16 @@ import vgg19
 import dataload
 
 '''------------------------start of the program-----------------------------'''
+
 dataNum= 1000
 batchSize = 16
+
 with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.8)))) as sess:
 
     '''------------------------Data Load-------------------------'''
     ref, hr = dataload.dataLoader("./SRNTT1000.h5")
-    M_t = np.load("autumn1000_M_t")
-    M_s = np.load("autumn1000_M_s")
+    M_t = np.load("autumn1000_M_t.npy")
+    M_s = np.load("autumn1000_M_s.npy")
     train_hr, test_hr, train_ref, test_ref, train_Mt, test_Mt, train_Ms, test_Ms \
      = train_test_split(hr, ref, M_t, M_s, test_size=0.2)
     
@@ -27,13 +29,13 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     test_lr = utils.img_resize(test_hr, 25)
     test_lred = utils.img_resize(test_ref, 25)
 
-    for i in range(train_ref.shape[0]):
+    for i in range(test_ref.shape[0]):
         path = './result/ref/'+ str(i+1) + '.bmp'
-        utils.img_save(train_ref[i,:,:,:], path)
+        utils.img_save(test_ref[i,:,:,:], path)
         path = './result/lr/' + str(i+1) + '.bmp'
-        utils.img_save(train_lr[i,:,:,:], path)
+        utils.img_save(test_lr[i,:,:,:], path)
         path = './result/hr/' + str(i+1) + '.bmp'
-        utils.img_save(train_hr[i,:,:,:], path)
+        utils.img_save(test_hr[i,:,:,:], path)
     
 
     '''----------------------Net Construct-------------------------'''
@@ -92,10 +94,10 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
 
         if epoch > 0 and epoch % 100 ==0:
             prediction = sess.run(y_pred, feed_dict = {x:test_lr, Mt_ph:test_Mt, train_mode:False})
-            eval_psnr = tf.image.psnr(prediction, test_hr, max_val=1.0)
-            eval_ssim = tf.image.ssim(prediction, test_hr, max_val=1.0)
-            np.save("epoch"+str(epoch)+"_psnr.npy", eval_psnr)
-            np.save("epoch"+str(epoch)+"_ssim.npy", eval_ssim)
+            # eval_psnr = tf.image.psnr(prediction, test_hr, max_val=1.0)
+            # eval_ssim = tf.image.ssim(prediction, test_hr, max_val=1.0)
+            # np.save("epoch"+str(epoch)+"_psnr.npy", eval_psnr)
+            # np.save("epoch"+str(epoch)+"_ssim.npy", eval_ssim)
             if epoch % 1000 == 0:
             # Calculate or Save the prediction
                 for i in range(prediction.shape[0]):
