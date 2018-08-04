@@ -32,7 +32,6 @@ def img_resize(image, rate):
     return img/255.0
 
 def img_crop(image, x, y):
-    m, n, band = image.shape
     img = image[:x, :y, :]
     return img
 

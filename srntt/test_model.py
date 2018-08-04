@@ -20,7 +20,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     M_t = np.load("autumn1000_M_t")
     M_s = np.load("autumn1000_M_s")
     train_hr, test_hr, train_ref, test_ref, train_Mt, test_Mt, train_Ms, test_Ms \
-     = train_test_split(hr, ref, M_t, M_s, test_size=0.33)
+     = train_test_split(hr, ref, M_t, M_s, test_size=0.2)
     
     train_lr = utils.img_resize(train_hr, 25)
     train_lref = utils.img_resize(train_ref, 25)
@@ -28,11 +28,11 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     test_lred = utils.img_resize(test_ref, 25)
 
     for i in range(train_ref.shape[0]):
-        path = './result/ref/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
+        path = './result/ref/'+ str(i+1) + '.bmp'
         utils.img_save(train_ref[i,:,:,:], path)
-        path = './result/lr/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
+        path = './result/lr/' + str(i+1) + '.bmp'
         utils.img_save(train_lr[i,:,:,:], path)
-        path = './result/hr/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
+        path = './result/hr/' + str(i+1) + '.bmp'
         utils.img_save(train_hr[i,:,:,:], path)
     
 
@@ -76,23 +76,29 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
         ybatch = train_hr[ran,:,:,:]
         MtBatch = M_t[ran,:,:,:]
         MsBatch = M_s[ran,:,:,:]
+        train_dict = {x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch,train_mode:True, Learning_rate: learning_rate}
         if epoch < 5:
-            sess.run(train_op_pre, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch,train_mode:True, Learning_rate: learning_rate})
+            sess.run(train_op_pre, feed_dict = train_dict)
         else:
-            sess.run(train_op, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch,train_mode:True, Learning_rate: learning_rate})
+            sess.run(train_op, feed_dict = train_dict)
 
         if epoch % 50==0:
             # update learning rate
-            learning_rate /= 10
-            print('--------------loss', sess.run(loss_total, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:False}), '------------------')
-        if epoch > 0 and epoch %1000 ==0:
+            if learning_rate > 1e-6:
+                learning_rate /= 10
+            print('--------------loss', sess.run(loss_total, 
+            feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:False}), 
+            '------------------')
+
+        if epoch > 0 and epoch % 100 ==0:
             prediction = sess.run(y_pred, feed_dict = {x:test_lr, Mt_ph:test_Mt, train_mode:False})
             eval_psnr = tf.image.psnr(prediction, test_hr, max_val=1.0)
             eval_ssim = tf.image.ssim(prediction, test_hr, max_val=1.0)
             np.save("epoch"+str(epoch)+"_psnr.npy", eval_psnr)
             np.save("epoch"+str(epoch)+"_ssim.npy", eval_ssim)
+            if epoch % 1000 == 0:
             # Calculate or Save the prediction
-            for i in range(prediction.shape[0]):
-                path = './result/pred/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
-                utils.img_save(prediction[i,:,:,:], path)
+                for i in range(prediction.shape[0]):
+                    path = './result/pred/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
+                    utils.img_save(prediction[i,:,:,:], path)
 
