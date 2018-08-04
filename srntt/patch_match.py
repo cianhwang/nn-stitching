@@ -26,6 +26,8 @@
 
 import tensorflow as tf
 import numpy as np
+#from numba import jit
+import time
 
 def fun_zeroPadding(M, fringe):
     m, n, band = M.shape
@@ -33,12 +35,13 @@ def fun_zeroPadding(M, fringe):
     M_padding[fringe:-fringe, fringe:-fringe, :] = M
     return M_padding
 
+
 def fun_patchCrop(M, leftupperX, leftupperY, patchSize): #
-    # M 40x40x256
+    # M No.x40x40x256
     patch = M[leftupperX:(leftupperX+patchSize), leftupperY:(leftupperY+patchSize), :]
     return patch
 
-def fun_simScore(patch_LR, patch_LRef):
+#def fun_simScore(patch_LR, patch_LRef):
     vec_LR = patch_LR.reshape([-1, 1])
     vec_LRef = patch_LRef.reshape([-1, 1])
     score = np.dot(vec_LR.T, vec_LRef)/(np.linalg.norm(vec_LR)*np.linalg.norm(vec_LRef)+ np.spacing(1))
@@ -61,7 +64,8 @@ def Fun_patchSample(M, patchSize = 3, Stride = 1):
             k += 1
     return patchStack
 
-def Fun_patchConv(M_LR, patchStack):
+def Fun_patchConv(M_LR, patchStack, sess):
+
     m1, n1, band1 = M_LR.shape
     m2, n2, band2, dim = patchStack.shape # m2: patch size
     assert band1 == band2
@@ -79,15 +83,15 @@ def Fun_patchConv(M_LR, patchStack):
             patchStack[:, :, :, k] = patchStack[:, :, :, k]/(np.spacing(1)+np.linalg.norm(patchStack[:, :, :, k].reshape([1, -1])))
             k += 1
 
-    with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.5)))) as sess:
-    # -----conv: use similarity score.-----
-        tf_patchStack = tf.constant(patchStack, tf.float32)
-        tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
-        scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME') # 1.Inner product? 2.Flip?
-        scoreMap = sess.run(scoreMap)
-        
+# -----conv: use similarity score.-----
+    tf_patchStack = tf.constant(patchStack, tf.float32)
+    tf_M_LR = tf.constant(M_LR[np.newaxis, :, :, :], tf.float32)
+    scoreMap = tf.nn.conv2d(tf_M_LR, tf_patchStack, strides = [1,1,1,1], padding='SAME') # 1.Inner product? 2.Flip?
+    scoreMap = sess.run(scoreMap)
+    
     scoreMap = scoreMap[0, :, :, :]/(np.spacing(1)+np.repeat(normMap[:, :, np.newaxis], dim, axis=2))
     return scoreMap
+
 
 def Fun_locateCorr(scoreMap, band):
     assert len(scoreMap.shape) == 3
@@ -95,6 +99,7 @@ def Fun_locateCorr(scoreMap, band):
     M_s = np.repeat(M_s[:, :, np.newaxis], band, axis=2) ##? Normalization?
     maxIdxMap = np.argmax(scoreMap, axis = 2)
     return M_s, maxIdxMap
+
 
 def Fun_stickPatch(maxIdxMap, M_Ref, M_s, patchSize = 3):
     m, n, band = M_Ref.shape
@@ -117,9 +122,25 @@ def Fun_stickPatch(maxIdxMap, M_Ref, M_s, patchSize = 3):
     M_t = stickPad[fringe:-fringe, fringe:-fringe, :] * M_s # element-wise product
     return M_t
 
-def Fun_patchMatching(M_LR, M_LRef, M_Ref, patchSize = 3, Stride = 1):
-    M_LRef_patchStack = Fun_patchSample(M_LRef, patchSize, Stride)
-    scoreMap = Fun_patchConv(M_LR, M_LRef_patchStack)
-    M_s, maxIdxMap = Fun_locateCorr(scoreMap, M_LR.shape[2])
-    M_t = Fun_stickPatch(maxIdxMap, M_Ref, M_s, patchSize)
+
+def Fun_patchMatching(M_LR, M_LRef, M_Ref, sess, patchSize = 3, Stride = 1):
+    M_s = np.zeros(M_LR.shape)
+    M_t = np.zeros(M_LR.shape)
+    for i in range(M_LR.shape[0]):
+        M_LRef_patchStack = Fun_patchSample(M_LRef[i,:,:,:], patchSize, Stride)
+        scoreMap = Fun_patchConv(M_LR[i,:,:,:], M_LRef_patchStack, sess)
+        M_s[i,:,:,:], maxIdxMap = Fun_locateCorr(scoreMap, M_LR[i,:,:,:].shape[2])
+        M_t[i,:,:,:] = Fun_stickPatch(maxIdxMap, M_Ref[i,:,:,:], M_s[i,:,:,:], patchSize)
     return M_t, M_s
+
+def test():
+    sess = tf.Session()
+    M_LR = (np.random.random([10, 40, 40, 256])-0.5)*8000
+    M_LRef = (np.random.random([10, 40, 40, 256])-0.5)*8000
+    M_Ref = (np.random.random([10, 40, 40, 256])-0.5)*8000
+    startTime = time.time()
+    Fun_patchMatching(M_LR, M_LRef, M_Ref, sess)
+    print("time =", time.time()-startTime)
+
+if __name__ == "__main__":
+    test()
