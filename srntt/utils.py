@@ -5,9 +5,6 @@ import skimage.io
 import skimage.transform
 import tensorflow as tf
 
-def psnr():
-    pass
-
 def Gram(feature_maps):
   """Computes the Gram matrix for a set of feature maps."""
   batch_size, height, width, channels = tf.unstack(tf.shape(feature_maps))

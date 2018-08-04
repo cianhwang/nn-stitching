@@ -16,8 +16,11 @@ batchSize = 16
 with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.8)))) as sess:
 
     '''------------------------Data Load-------------------------'''
-    ref, hr = dataload.dataLoader("./SRNTT1000.h5", dataNum)
-    train_hr, test_hr, train_ref, test_ref = train_test_split(train_hr, train_ref, test_size=0.33)
+    ref, hr = dataload.dataLoader("./SRNTT1000.h5")
+    M_t = np.load("autumn1000_M_t")
+    M_s = np.load("autumn1000_M_s")
+    train_hr, test_hr, train_ref, test_ref, train_Mt, test_Mt, train_Ms, test_Ms \
+     = train_test_split(hr, ref, M_t, M_s, test_size=0.33)
     
     train_lr = utils.img_resize(train_hr, 25)
     train_lref = utils.img_resize(train_ref, 25)
@@ -61,15 +64,10 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
     '''-------------------------train--------------------------'''
     for epoch in range(10000):
         ran=np.sort(np.random.choice(train_hr.shape[0],batchSize,replace=False))
-        M_LR = Vgg_module.vgg19_module(utils.img_resize(train_lr[ran,:,:,:], 400), sess)
-        M_LRef = Vgg_module.vgg19_module(utils.img_resize(train_lref[ran,:,:,:], 400), sess)
-        M_Ref = Vgg_module.vgg19_module(train_ref[ran,:,:,:], sess)
-        M_t, M_s = patch_match.Fun_patchMatching(M_LR, M_LRef, M_Ref, sess)
-
         xbatch = train_lr[ran,:,:,:]
         ybatch = train_hr[ran,:,:,:]
-        MtBatch = M_t
-        MsBatch = M_s
+        MtBatch = M_t[ran,:,:,:]
+        MsBatch = M_s[ran,:,:,:]
         learning_rate = 1e-4
         if epoch >= 5:
             sess.run(train_op, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch,train_mode:True, Learning_rate: learning_rate})
@@ -78,19 +76,19 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
         if epoch % 50==0:
             # update learning rate
             learning_rate /= 10
-            print('loss----------------------------', sess.run(loss_total, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:False}), '-----------------------------')
-        if epoch > 0 and epoch %1000 ==0
-
-            prediction = sess.run(y_pred, feed_dict = {x:test_lr, Mt_ph:M_t_test, train_mode:False})
-            eval_psnr = utils.psnr(prediction, test_hr)
+            print('--------------loss', sess.run(loss_total, feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:False}), '------------------')
+        if epoch > 0 and epoch %1000 ==0:
+            prediction = sess.run(y_pred, feed_dict = {x:test_lr, Mt_ph:test_Mt, train_mode:False})
+            eval_psnr = tf.image.psnr(prediction, test_hr, max_val=1.0)
+            eval_ssim = tf.image.ssim(prediction, test_hr, max_val=1.0)
             # Calculate or Save the prediction
-            for i in range(batchSize):
-                path = './result/pred/' + str(i+1) + '.bmp'
+            for i in range(prediction.shape[0]):
+                path = './result/pred/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
                 utils.img_save(prediction[i,:,:,:], path)
-                path = './result/ref/' + str(i+1) + '.bmp'
+                path = './result/ref/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
                 utils.img_save(train_ref[i,:,:,:], path)
-                path = './result/lr/' + str(i+1) + '.bmp'
+                path = './result/lr/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
                 utils.img_save(train_lr[i,:,:,:], path)
-                path = './result/hr/' + str(i+1) + '.bmp'
+                path = './result/hr/epoch'+str(epoch)+'_' + str(i+1) + '.bmp'
                 utils.img_save(train_hr[i,:,:,:], path)
 
