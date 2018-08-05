@@ -76,8 +76,8 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
         ran=np.sort(np.random.choice(train_hr.shape[0],batchSize,replace=False))
         xbatch = train_lr[ran,:,:,:]
         ybatch = train_hr[ran,:,:,:]
-        MtBatch = M_t[ran,:,:,:]
-        MsBatch = M_s[ran,:,:,:]
+        MtBatch = train_Mt[ran,:,:,:]
+        MsBatch = train_Ms[ran,:,:,:]
         train_dict = {x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch,train_mode:True, Learning_rate: learning_rate}
         if epoch < 5:
             sess.run(train_op_pre, feed_dict = train_dict)
@@ -92,12 +92,14 @@ with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu
             feed_dict={x:xbatch, y:ybatch, Mt_ph:MtBatch, Ms_ph:MsBatch, train_mode:False}), 
             '------------------')
 
-        if epoch > 0 and epoch % 100 ==0:
+        if epoch % 100 ==0:
             prediction = sess.run(y_pred, feed_dict = {x:test_lr, Mt_ph:test_Mt, train_mode:False})
-            # eval_psnr = tf.image.psnr(prediction, test_hr, max_val=1.0)
-            # eval_ssim = tf.image.ssim(prediction, test_hr, max_val=1.0)
-            # np.save("epoch"+str(epoch)+"_psnr.npy", eval_psnr)
-            # np.save("epoch"+str(epoch)+"_ssim.npy", eval_ssim)
+            eval_psnr = tf.image.psnr(prediction, test_hr, max_val=1.0)
+            print("--------------psnr", np.mean(sess.run(eval_psnr)), "------------------")
+            eval_ssim = tf.image.ssim(tf.constant(prediction), tf.constant(test_hr), max_val=1.0)
+            print("--------------ssim", np.mean(sess.run(eval_psnr)), "------------------")
+            np.save("./result/psnr.npy", sess.run(eval_psnr))
+            np.save("./result/ssim.npy", sess.run(eval_ssim))
             if epoch % 1000 == 0:
             # Calculate or Save the prediction
                 for i in range(prediction.shape[0]):
