@@ -1,5 +1,5 @@
 # SRNTT Project Realization
-This is a Tensorflow implemention of SRNTT. (Zhifei Zhang, Zhaowen Wang, Zhe Lin, and Hairong Qi, "Reference-Conditioned Super-Resolution by Neural Texture Transfer", arXiv:1804.03360v1, 2018.)
+This is a Tensorflow implemention of SRNTT. (Zhifei Zhang, Zhaowen Wang, Zhe Lin, and Hairong Qi, "Reference-Conditioned Super-Resolution by Neural Texture Transfer", arXiv:1804.03360v1, 2018.) FOR STUDY ONLY. ALL THE RIGHTS BELONG TO THE ORIGINAL AUTHORS.
 
 # OFFLINE BRANCH OF SRNTT
 ## Module 1: Texture Extractor (''test_vgg19.py'')
